@@ -8,7 +8,6 @@ RUN apt-get install -y wget curl unzip xvfb libxi6 gnupg
 RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 RUN apt-get install -y ./google-chrome-stable_current_amd64.deb
 RUN rm google-chrome-stable_current_amd64.deb
-RUN google-chrome --version
 
 RUN wget https://storage.googleapis.com/chrome-for-testing-public/129.0.6668.70/linux64/chromedriver-linux64.zip
 RUN unzip chromedriver-linux64.zip
@@ -25,5 +24,3 @@ WORKDIR /app
 ADD . /app/
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
-
-# CMD ["python", "web_crawler.py"]
