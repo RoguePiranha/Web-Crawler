@@ -29,6 +29,7 @@ class CompetitorCrawler:
     DESCRIPTION = "description"
     PRICES = "prices"
     SPEEDS = "speeds"
+    BLACKLIST_EXTENSIONS = ["png", "jpeg", "jpg", "gif", "bmp", "tiff", "svg", "webp", "ico", "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "zip", "rar", "7z", "tar", "gz", "mp3", "wav", "ogg", "mp4", "avi", "mkv", "mov", "flv", "wmv", "exe", "dll", "bin"]
 
     def __init__(self, chrome_binary_path, chromedriver_path):
         # Initialize Selenium WebDriver
@@ -42,43 +43,47 @@ class CompetitorCrawler:
         self.total_pages = 0  # Track the total number of pages visited
         self.visited_urls = set()  # Track all visited URLs to avoid duplicates
 
-    # Function to fetch and parse the sitemap
-    def get_sitemap_urls(self, base_url):
+    # # Function to fetch and parse the sitemap
+    # # TODO: REMOVE SITEMAP CRAWLING
+    # def get_sitemap_urls(self, base_url):
 
-        sitemap_url = urljoin(base_url, "/sitemap.xml")
-        try:
-            response = requests.get(sitemap_url, verify=False)
-            response.raise_for_status()
+    #     sitemap_url = urljoin(base_url, "/sitemap.xml")
+    #     try:
+    #         response = requests.get(sitemap_url, verify=False)
+    #         response.raise_for_status()
 
-            sitemap_content = response.content
-            root = ET.fromstring(sitemap_content)
-            namespace = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
+    #         sitemap_content = response.content
+    #         root = ET.fromstring(sitemap_content)
+    #         namespace = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
 
-            urls = []
-            for url in root.findall("ns:url", namespaces=namespace):
-                loc_element = url.find("ns:loc", namespaces=namespace)
-                if loc_element is not None:
-                    loc = loc_element.text
-                    if loc and "news" not in loc.lower() and "blog" not in loc.lower():
-                        urls.append(loc)
+    #         #crawl all urls in sitemap
+            
 
-            return urls
+    #         urls = []
+    #         for url in root.findall("ns:url", namespaces=namespace):
+    #             loc_element = url.find("ns:loc", namespaces=namespace)
+    #             if loc_element is not None:
+    #                 loc = loc_element.text
+    #                 if loc and "news" not in loc.lower() and "blog" not in loc.lower():
+    #                     urls.append(loc)
 
-        except requests.exceptions.SSLError as e:
-            print(f"SSL error encountered: {e}")
-            return None
+    #         return urls
+
+    #     except requests.exceptions.SSLError as e:
+    #         print(f"SSL error encountered: {e}")
+    #         return None
         
-        except requests.exceptions.HTTPError as e:
-            print(f"HTTP error encountered: {e}")
-            return None
+    #     except requests.exceptions.HTTPError as e:
+    #         print(f"HTTP error encountered: {e}")
+    #         return None
         
-        except requests.exceptions.RequestException as e:
-            print(f"Failed to fetch sitemap: {e}")
-            return None
+    #     except requests.exceptions.RequestException as e:
+    #         print(f"Failed to fetch sitemap: {e}")
+    #         return None
         
-        except ET.ParseError as e:
-            print(f"XML parsing error encountered: {e}")
-            return None
+    #     except ET.ParseError as e:
+    #         print(f"XML parsing error encountered: {e}")
+    #         return None
 
     # Function to get the company name from the 'og:site_name' meta tag or fallback to the URL
     def get_company_name(self, base_url):
@@ -101,12 +106,13 @@ class CompetitorCrawler:
         internal_links = set()
         base_domain = urlparse(base_url).netloc
 
+        # TODO: Add logic to remove links with extensions in BLACKLIST_EXTENSIONS
         for link in body.find_all('a', href=True):
             full_url = urljoin(base_url, link['href'])
             parsed_url = urlparse(full_url)
 
-            if parsed_url.netloc == base_domain and full_url not in self.visited_urls and not parsed_url.fragment and not full_url.startswith("tel:") and not full_url.startswith("email:"):
-                print(f"Found internal link: {full_url}")
+            if parsed_url.netloc == base_domain and full_url not in self.visited_urls and not parsed_url.fragment and not full_url.startswith("tel:") and not full_url.startswith("email:") and not any(full_url.endswith(ext) for ext in self.BLACKLIST_EXTENSIONS):
+                # print(f"Found internal link: {full_url}")
                 internal_links.add(full_url)
 
         return internal_links
@@ -167,10 +173,7 @@ class CompetitorCrawler:
             internal_links = self.get_internal_links(base_url, soup)
 
             if not internal_links:
-                print(f"WARNING: No internal links found for {base_url}. Possible reasons:")
-                print(f"  - Incorrect base URL?")
-                print(f"  - No <body> tag in HTML?")
-                print(f"  - Issue with URL resolving?")
+                print(f"WARNING: No internal links found for {base_url}.")
 
             for link in internal_links:
                 if link not in self.visited_urls:
@@ -212,37 +215,39 @@ class CompetitorCrawler:
             "speeds": speeds
         }
 
+    ## TODO: REMOVE SITEMAP CRAWLING
     # Function to gather data from the sitemap URLs or fallback to recursive crawl
     def gather_data_from_sitemap_or_crawl(self, base_url):
-        sitemap_urls = self.get_sitemap_urls(base_url)
+        # sitemap_urls = self.get_sitemap_urls(base_url)
         all_data = []
         plot_data = []
         count = 0
 
-        if sitemap_urls:
-            print(f"Found {len(sitemap_urls)} URLs in sitemap for {base_url}.")
-            for idx, url in enumerate(sitemap_urls):
-                count += 1
-                self.total_pages += 1
-                print(f"Crawling {idx + 1}/{len(sitemap_urls)}: {url}")
-                try:
-                    self.driver.get(url)
-                    soup = BeautifulSoup(self.driver.page_source, 'html.parser')
-                    data = self.scrape_competitor_info(url, soup)
-                    all_data.append(data)
-                    if data["prices"] and data["speeds"]:
-                        for price, speed in zip(data["prices"], data["speeds"]):
-                            plot_data.append({
-                                "url": url,
-                                "price": price,
-                                "speed": speed
-                            })
-                except Exception as e:
-                    print(f"Error while crawling {url}: {e}")
-                time.sleep(0.1)
-        else:
-            print(f"No sitemap found, falling back to crawling {base_url}")
-            all_data, plot_data, count = self.crawl_site(base_url)
+        # if sitemap_urls:
+        #     print(f"Found {len(sitemap_urls)} URLs in sitemap for {base_url}.")
+        #     for idx, url in enumerate(sitemap_urls):
+        #         count += 1
+        #         self.total_pages += 1
+        #         print(f"Crawling {idx + 1}/{len(sitemap_urls)}: {url}")
+        #         try:
+        #             self.driver.get(url)
+        #             soup = BeautifulSoup(self.driver.page_source, 'html.parser')
+        #             data = self.scrape_competitor_info(url, soup)
+
+        #             all_data.append(data)
+        #             if data["prices"] and data["speeds"]:
+        #                 for price, speed in zip(data["prices"], data["speeds"]):
+        #                     plot_data.append({
+        #                         "url": url,
+        #                         "price": price,
+        #                         "speed": speed
+        #                     })
+        #         except Exception as e:
+        #             print(f"Error while crawling {url}: {e}")
+        #         time.sleep(0.1)
+        # else:
+        #     print(f"No sitemap found, falling back to crawling {base_url}")
+        all_data, plot_data, count = self.crawl_site(base_url)
 
         return all_data, plot_data, count
 
@@ -263,8 +268,8 @@ class CompetitorCrawler:
         df_all_data = pd.DataFrame(all_competitor_data)
         df_plot_data = pd.DataFrame(plot_data)
 
-        df_all_data.to_csv('output_all_data.csv', index=False)
-        df_plot_data.to_csv('output_plot_data.csv', index=False)
+        df_all_data.to_csv(f'data/{company_name}_full.csv', index=False)
+        df_plot_data.to_csv(f'data/{company_name}.csv', index=False)
 
         return df_all_data, df_plot_data, total_counts, self.total_pages
 
@@ -277,7 +282,7 @@ if __name__ == "__main__":
     crawler = CompetitorCrawler(chrome_binary_path, chromedriver_path)
 
     competitor_urls = [
-        "https://pmt.org"
+        "https://whitecloudcom.com"
     ]
 
     data, plot_data, total_counts, total_pages = crawler.gather_competitor_data(competitor_urls)
