@@ -1,6 +1,6 @@
 ---
 title: "Internet Speed vs Cost Analysis"
-author: "Your Name"
+author: "Andrew Swayze and Marcos Centeno"
 format: html
 execute:
   echo: false
@@ -30,13 +30,3 @@ plt.title('Internet Speed vs Cost')
 # Show the plot
 plt.grid(True)
 plt.show()
-
-
-    # competitor_urls = [
-    #     # "sparklight.com",
-    #     # "xfinity.com",
-    #     # "whitecloudcom.com",
-    #     # "https://pmt.org",
-    #     "https://risebroadband.com",
-    #     # "blackfoot.com"
-    # ]
