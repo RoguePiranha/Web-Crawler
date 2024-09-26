@@ -13,6 +13,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import urllib3
+import os
+from decouple import config
+
+
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -31,6 +35,7 @@ class CompetitorCrawler:
         chrome_options = Options()
         chrome_options.binary_location = chrome_binary_path
         chrome_options.add_argument("--headless")
+        chrome_options.add_argument('--disable-dev-shm-usage')
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--no-sandbox")
         self.driver = webdriver.Chrome(service=Service(chromedriver_path), options=chrome_options)
@@ -266,8 +271,8 @@ class CompetitorCrawler:
 
 # Main script execution
 if __name__ == "__main__":
-    chrome_binary_path = r"C:\Users\akswa\Documents\chrome_driver\chrome-win64\chrome-win64\chrome.exe"
-    chromedriver_path = r"C:\Users\akswa\Documents\chrome_driver\chromedriver-win64\chromedriver-win64\chromedriver.exe"
+    chrome_binary_path = config('CHROME_BINARY_PATH')
+    chromedriver_path = config('CHROMEDRIVER_PATH')
 
     crawler = CompetitorCrawler(chrome_binary_path, chromedriver_path)
 

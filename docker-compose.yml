@@ -1,0 +1,9 @@
+services:
+  app:
+    # restart: always
+    build: .
+    volumes: 
+      - .:/app
+    # ports:
+    #   - '0.0.0.0:8000:8000'
+    command: python web_crawler.py
