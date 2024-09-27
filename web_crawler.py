@@ -1,11 +1,10 @@
 from urllib.parse import urljoin, urlparse
-import requests
 import bs4
 from bs4 import BeautifulSoup
 import xml.etree.ElementTree as ET
 import pandas as pd
 import re
-import time
+# import time
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -180,7 +179,7 @@ class CompetitorCrawler:
 
             for link in internal_links:
                 if link not in self.visited_urls:
-                    time.sleep(0.1)  # Delay to avoid overwhelming the server
+                    # time.sleep(0.1)  # Delay to avoid overwhelming the server
                     sub_data, sub_plot_data, count = self.crawl_site(link, count)
                     all_data.extend(sub_data)
                     plot_data.extend(sub_plot_data)
@@ -288,6 +287,13 @@ if __name__ == "__main__":
         "https://www.risebroadband.com/"
     ]
 
+    # crawler_list = []
+
+    # for url in competitor_urls: 
+    #     crawler_list.push(CompetitorCrawler(url))
+
+
+
     data, plot_data, total_counts, total_pages = crawler.gather_competitor_data(competitor_urls)
     crawler.driver.quit()
 
@@ -296,6 +302,7 @@ if __name__ == "__main__":
 
     print("\nCrawl completed successfully!\n")
     print("Total Individual Crawl Counts:")
+
     for company, count in total_counts.items():
         print(f"    {company}: {count}")
     print(f"Total pages crawled overall: {total_pages}")

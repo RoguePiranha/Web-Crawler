@@ -3,3 +3,5 @@ env
 .vscode
 .idea
 data/*
+scripts/*.html
+scripts/full_report_files
