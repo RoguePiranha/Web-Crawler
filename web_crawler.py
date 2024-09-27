@@ -14,6 +14,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import urllib3
 from decouple import config
+from requests_html import HTMLSession
 
 
 
@@ -151,8 +152,11 @@ class CompetitorCrawler:
                     print(f"Body tag visibility ensured for {base_url}")
                 except Exception as e:
                     print(f"Error making body tag visible on {base_url}: {e}")
-
-            soup = BeautifulSoup(self.driver.page_source, 'html.parser')
+            session = HTMLSession()
+            res = session.get(base_url)
+            # print(res.html.html)
+            # soup = BeautifulSoup(self.driver.page_source, 'html.parser')
+            soup = BeautifulSoup(res.html.html, 'html.parser')
 
             # Gather data on this page
             page_data = self.scrape_competitor_info(base_url, soup)
@@ -281,7 +285,7 @@ if __name__ == "__main__":
     crawler = CompetitorCrawler(chrome_binary_path, chromedriver_path)
 
     competitor_urls = [
-        "https://whitecloudcom.com"
+        "https://www.risebroadband.com/"
     ]
 
     data, plot_data, total_counts, total_pages = crawler.gather_competitor_data(competitor_urls)
