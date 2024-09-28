@@ -4,7 +4,6 @@ from bs4 import BeautifulSoup
 import xml.etree.ElementTree as ET
 import pandas as pd
 import re
-# import time
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -14,6 +13,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import urllib3
 from decouple import config
 from requests_html import HTMLSession
+import validators
 
 
 
@@ -300,29 +300,29 @@ class Crawler:
         try:
             session = HTMLSession()
             self.session = session.get(url)
-            print(session.html)
-            print(session.html.links)
-            self.filter_url_list(session.html.links)
             self.crawled_list.append(url)
-            self.url_queue.remove(url)
-            bs = BeautifulSoup(self.session.html.html, 'html.parser')
+            self.filter_url_list(self.session.html.links)
             self.page_list.append({
                 'url': url,
-                'html': bs
+                'html': BeautifulSoup(self.session.html.html, 'html.parser')
             })
-            
+            self.url_queue.remove(url)
 
         except Exception:
             print(f"Timeout waiting for body on {self.url}")
 
-    def filter_url_list(self, ulist):
-        # Remove files, phone numbers and emails 
-        removed_files = [item for item in ulist if not any(sub in item for sub in self.blacklist)]
-        # Removed external urls
-        removed_external = [item for item in removed_files if self.url in item]
-        for url in removed_external:
+    def filter_url_list(self, url_list):
+        
+        for url in url_list:
             full_url = urljoin(self.url, url)
-            if full_url not in self.url_list:
+            # Remove files, phone numbers and emails 
+            if any(sub in full_url for sub in self.blacklist):
+                continue
+            
+            if self.url not in full_url:
+                continue
+            
+            if full_url not in self.crawled_list:
                 self.url_queue.append(full_url)
              
 # Main script execution
@@ -333,7 +333,8 @@ if __name__ == "__main__":
     # crawler = CompetitorCrawler(chrome_binary_path, chromedriver_path)
 
     competitor_urls = [
-        "https://marccent.com/"
+        "https://www.risebroadband.com/"
+        # "https://marccent.com/"
     ]
 
     crawler_list = []
