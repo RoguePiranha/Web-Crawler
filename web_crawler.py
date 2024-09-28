@@ -276,34 +276,88 @@ class CompetitorCrawler:
         return df_all_data, df_plot_data, total_counts, self.total_pages
 
 
+class Crawler:
+    url = None
+    session = None
+    page_list = []
+    url_queue = []
+    crawled_list = []
+    blacklist = [
+        ".png", ".jpeg", ".jpg", ".gif", ".bmp", ".tiff", ".svg", ".webp", ".ico", ".pdf", 
+        ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".zip", ".rar", ".7z", ".tar", ".gz",
+        ".mp3", ".wav", ".ogg", ".mp4", ".avi", ".mkv", ".mov", ".flv", ".wmv", ".exe", ".dll", 
+        ".bin", "tel:", "mailto:"
+    ]
+
+    def __init__(self, url):
+        # init
+        self.url = url
+        self.url_queue.append(url)
+        self.crawl_page(url)
+
+    def crawl_page(self, url):
+        
+        try:
+            session = HTMLSession()
+            self.session = session.get(url)
+            print(session.html)
+            print(session.html.links)
+            self.filter_url_list(session.html.links)
+            self.crawled_list.append(url)
+            self.url_queue.remove(url)
+            bs = BeautifulSoup(self.session.html.html, 'html.parser')
+            self.page_list.append({
+                'url': url,
+                'html': bs
+            })
+            
+
+        except Exception:
+            print(f"Timeout waiting for body on {self.url}")
+
+    def filter_url_list(self, ulist):
+        # Remove files, phone numbers and emails 
+        removed_files = [item for item in ulist if not any(sub in item for sub in self.blacklist)]
+        # Removed external urls
+        removed_external = [item for item in removed_files if self.url in item]
+        for url in removed_external:
+            full_url = urljoin(self.url, url)
+            if full_url not in self.url_list:
+                self.url_queue.append(full_url)
+             
 # Main script execution
 if __name__ == "__main__":
     chrome_binary_path = config('CHROME_BINARY_PATH')
     chromedriver_path = config('CHROMEDRIVER_PATH')
 
-    crawler = CompetitorCrawler(chrome_binary_path, chromedriver_path)
+    # crawler = CompetitorCrawler(chrome_binary_path, chromedriver_path)
 
     competitor_urls = [
-        "https://www.risebroadband.com/"
+        "https://marccent.com/"
     ]
 
-    # crawler_list = []
+    crawler_list = []
+    for url in competitor_urls: 
+        crawler_list.append(Crawler(url))
+    
 
-    # for url in competitor_urls: 
-    #     crawler_list.push(CompetitorCrawler(url))
+    
+    # print(crawler_list[0].page_count)
+    print('end of script')
+    print(crawler_list[0].url)
+
+    # data, plot_data, total_counts, total_pages = crawler.gather_competitor_data(competitor_urls)
+    # crawler.driver.quit()
+
+    # print(data)
+    # print(plot_data)
+
+    # print("\nCrawl completed successfully!\n")
+    # print("Total Individual Crawl Counts:")
+
+    # for company, count in total_counts.items():
+    #     print(f"    {company}: {count}")
+    # print(f"Total pages crawled overall: {total_pages}")
+    # print("Data saved to output_all_data.csv and output_plot_data.csv")
 
 
-
-    data, plot_data, total_counts, total_pages = crawler.gather_competitor_data(competitor_urls)
-    crawler.driver.quit()
-
-    print(data)
-    print(plot_data)
-
-    print("\nCrawl completed successfully!\n")
-    print("Total Individual Crawl Counts:")
-
-    for company, count in total_counts.items():
-        print(f"    {company}: {count}")
-    print(f"Total pages crawled overall: {total_pages}")
-    print("Data saved to output_all_data.csv and output_plot_data.csv")
