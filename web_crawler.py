@@ -342,7 +342,7 @@ if __name__ == "__main__":
         crawler_list.append(Crawler(url))
     
 
-    
+    rise = crawler_list[0]
     # print(crawler_list[0].page_count)
     print('end of script')
     print(crawler_list[0].url)
