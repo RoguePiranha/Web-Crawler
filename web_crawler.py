@@ -1,21 +1,18 @@
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, urlsplit
 import bs4
 from bs4 import BeautifulSoup
 import xml.etree.ElementTree as ET
 import pandas as pd
 import re
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+# from selenium import webdriver
+# from selenium.webdriver.chrome.service import Service
+# from selenium.webdriver.chrome.options import Options
+# from selenium.webdriver.common.by import By
+# from selenium.webdriver.support.ui import WebDriverWait
+# from selenium.webdriver.support import expected_conditions as EC
 import urllib3
-from decouple import config
+# from decouple import config
 from requests_html import HTMLSession
-import validators
-
-
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -32,20 +29,20 @@ class CompetitorCrawler:
 
     def __init__(self, chrome_binary_path, chromedriver_path):
         # Initialize Selenium WebDriver
-        chrome_options = Options()
-        chrome_options.binary_location = chrome_binary_path
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument('--disable-dev-shm-usage')
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--no-sandbox")
-        self.driver = webdriver.Chrome(service=Service(chromedriver_path), options=chrome_options)
+        # chrome_options = Options()
+        # chrome_options.binary_location = chrome_binary_path
+        # chrome_options.add_argument("--headless")
+        # chrome_options.add_argument('--disable-dev-shm-usage')
+        # chrome_options.add_argument("--disable-gpu")
+        # chrome_options.add_argument("--no-sandbox")
+        # self.driver = webdriver.Chrome(service=Service(chromedriver_path), options=chrome_options)
         self.total_pages = 0  # Track the total number of pages visited
         self.visited_urls = set()  # Track all visited URLs to avoid duplicates
 
     # Function to get the company name from the 'og:site_name' meta tag or fallback to the URL
     def get_company_name(self, base_url):
-        self.driver.get(base_url)
-        soup = BeautifulSoup(self.driver.page_source, 'html.parser')
+        # self.driver.get(base_url)
+        # soup = BeautifulSoup(self.driver.page_source, 'html.parser')
 
         og_site_name = soup.find("meta", property="og:site_name")
         if og_site_name and isinstance(og_site_name, bs4.element.Tag) and og_site_name.has_attr("content"):
@@ -84,29 +81,29 @@ class CompetitorCrawler:
 
         try:
             # Open the page using Selenium
-            self.driver.get(base_url)
+            # self.driver.get(base_url)
 
             # Wait explicitly for elements that contain prices or speeds
             try:
-                WebDriverWait(self.driver, 15).until(
-                    EC.presence_of_element_located((By.TAG_NAME, "body"))
-                )
+                # WebDriverWait(self.driver, 15).until(
+                #     EC.presence_of_element_located((By.TAG_NAME, "body"))
+                # )
                 print(f"Body loaded for {base_url}")
             except Exception:
                 print(f"Timeout waiting for body on {base_url}")
 
 
-                try:
-                    # Ensure body is visible by injecting JavaScript
-                    self.driver.execute_script("""
-                        var body = document.getElementsByTagName('body')[0];
-                        body.style.opacity = '1';
-                        body.style.visibility = 'visible';
-                        body.style.display = 'block';
-                    """)
-                    print(f"Body tag visibility ensured for {base_url}")
-                except Exception as e:
-                    print(f"Error making body tag visible on {base_url}: {e}")
+                # try:
+                #     # Ensure body is visible by injecting JavaScript
+                #     self.driver.execute_script("""
+                #         var body = document.getElementsByTagName('body')[0];
+                #         body.style.opacity = '1';
+                #         body.style.visibility = 'visible';
+                #         body.style.display = 'block';
+                #     """)
+                #     print(f"Body tag visibility ensured for {base_url}")
+                # except Exception as e:
+                #     print(f"Error making body tag visible on {base_url}: {e}")
             session = HTMLSession()
             res = session.get(base_url)
             # print(res.html.html)
@@ -135,10 +132,6 @@ class CompetitorCrawler:
 
             for link in internal_links:
                 if link not in self.visited_urls:
-<<<<<<< HEAD
-                    # time.sleep(0.1)  # Delay to avoid overwhelming the server
-=======
->>>>>>> 33ee7970c64615ab2966cb8c1b9e9e62c7c832e7
                     sub_data, sub_plot_data, count = self.crawl_site(link, count)
                     all_data.extend(sub_data)
                     plot_data.extend(sub_plot_data)
@@ -208,10 +201,8 @@ class CompetitorCrawler:
 
         return df_all_data, df_plot_data, total_counts, self.total_pages
 
-
 class Crawler:
     url = None
-    session = None
     page_list = []
     url_queue = []
     crawled_list = []
@@ -223,62 +214,66 @@ class Crawler:
     ]
 
     def __init__(self, url):
-        # init
-        self.url = url
-        self.url_queue.append(url)
-        self.crawl_page(url)
+        self.url = urlsplit(url)
+        self.url_queue.append(self.url)
+        while len(self.url_queue) > 0:
+          print(len(self.url_queue), len(self.crawled_list), self.url_queue[0].geturl())
+          self.crawl_page(self.url_queue[0])
+          self.url_queue.pop(0)
 
-    def crawl_page(self, url):
-        
+    def crawl_page(self, url): 
         try:
-            session = HTMLSession()
-            self.session = session.get(url)
+            s = HTMLSession()
+            session = s.get(url.geturl())
+            self.filter_url_list(session.html.links)
             self.crawled_list.append(url)
-            self.filter_url_list(self.session.html.links)
             self.page_list.append({
                 'url': url,
-                'html': BeautifulSoup(self.session.html.html, 'html.parser')
+                'html': BeautifulSoup(session.html.html, 'html.parser')
             })
-            self.url_queue.remove(url)
 
         except Exception:
             print(f"Timeout waiting for body on {self.url}")
 
     def filter_url_list(self, url_list):
-        
         for url in url_list:
-            full_url = urljoin(self.url, url)
-            # Remove files, phone numbers and emails 
-            if any(sub in full_url for sub in self.blacklist):
+
+            current_url = urlsplit(urljoin(self.url.geturl(), url))
+            full_url = f"{current_url.scheme}://{current_url.netloc}{current_url.path}"
+
+            if any(sub in full_url for sub in self.blacklist): # Files, phone numbers and emails
+                continue
+            if any(full_url in sub.geturl() for sub in self.crawled_list): # Url was processed already
+                continue
+            if any(full_url in sub.geturl() for sub in self.url_queue): # Url is in queue already
+                continue
+            if self.url.netloc != current_url.netloc: # External url
                 continue
             
-            if self.url not in full_url:
-                continue
-            
-            if full_url not in self.crawled_list:
-                self.url_queue.append(full_url)
-             
+            self.url_queue.append(current_url) #Submit url to queue
+
+class Finder:
+    
+    def find(self):
+        print('something goes here')
+
 # Main script execution
 if __name__ == "__main__":
-    chrome_binary_path = config('CHROME_BINARY_PATH')
-    chromedriver_path = config('CHROMEDRIVER_PATH')
+    # chrome_binary_path = config('CHROME_BINARY_PATH')
+    # chromedriver_path = config('CHROMEDRIVER_PATH')
 
     # crawler = CompetitorCrawler(chrome_binary_path, chromedriver_path)
 
     competitor_urls = [
-        "https://www.risebroadband.com/"
-        # "https://marccent.com/"
+        # "https://www.risebroadband.com/",
+        "https://marccent.com/",
+        # "https://anthembroadband.com/"
     ]
 
     crawler_list = []
     for url in competitor_urls: 
         crawler_list.append(Crawler(url))
-    
-
-    rise = crawler_list[0]
-    # print(crawler_list[0].page_count)
-    print('end of script')
-    print(crawler_list[0].url)
+    # print(crawler_list[0])
 
     # data, plot_data, total_counts, total_pages = crawler.gather_competitor_data(competitor_urls)
     # crawler.driver.quit()
@@ -288,10 +283,7 @@ if __name__ == "__main__":
 
     # print("\nCrawl completed successfully!\n")
     # print("Total Individual Crawl Counts:")
-
     # for company, count in total_counts.items():
     #     print(f"    {company}: {count}")
     # print(f"Total pages crawled overall: {total_pages}")
     # print("Data saved to output_all_data.csv and output_plot_data.csv")
-
-
