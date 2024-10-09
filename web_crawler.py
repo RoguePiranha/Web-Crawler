@@ -13,6 +13,7 @@ import re
 import urllib3
 # from decouple import config
 from requests_html import HTMLSession
+import requests
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -214,13 +215,26 @@ class Crawler:
     ]
 
     def __init__(self, url):
-        self.url = urlsplit(url)
+        final_url = self.redirect_handler(url)
+        self.url = urlsplit(final_url)
         self.url_queue.append(self.url)
         while len(self.url_queue) > 0:
-          print(len(self.url_queue), len(self.crawled_list), self.url_queue[0].geturl())
-          self.crawl_page(self.url_queue[0])
-          self.url_queue.pop(0)
+            print(len(self.url_queue), len(self.crawled_list), self.url_queue[0].geturl())
+            self.crawl_page(self.url_queue[0])
+            self.url_queue.pop(0)
 
+    def redirect_handler(self, url):
+        try:
+            response = requests.get(url, allow_redirects=True)
+            final_url = response.url
+            if not final_url == url:
+              print('domain was redirected')
+              print(f'new url: {final_url}')
+            return final_url
+        except requests.exceptions.RequestException as e:
+            print(f"Error occurred: {e}")
+            return None
+  
     def crawl_page(self, url): 
         try:
             s = HTMLSession()
@@ -266,14 +280,24 @@ if __name__ == "__main__":
 
     competitor_urls = [
         # "https://www.risebroadband.com/",
-        "https://marccent.com/",
-        # "https://anthembroadband.com/"
+        # "https://marccent.com/",
+        # "https://anthembroadband.com/",
+        "https://bit.ly/4eDHHuy"
     ]
 
     crawler_list = []
-    for url in competitor_urls: 
+    for url in competitor_urls:
+          # website = Crawler(url)
+          # url_list = website.page_list
+          # for page in url_list:
+          #     soup = page['html']
+          #     company = soup.find('meta', property='og:site_name').content
+          #     print('blah')
         crawler_list.append(Crawler(url))
-    # print(crawler_list[0])
+
+
+    print(crawler_list[0])
+    print('the end')
 
     # data, plot_data, total_counts, total_pages = crawler.gather_competitor_data(competitor_urls)
     # crawler.driver.quit()
