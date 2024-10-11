@@ -282,21 +282,31 @@ if __name__ == "__main__":
         # "https://www.risebroadband.com/",
         # "https://marccent.com/",
         # "https://anthembroadband.com/",
-        "https://bit.ly/4eDHHuy"
+        # "https://bit.ly/4eDHHuy",
+        "https://rc-imp.com/"
     ]
 
     crawler_list = []
+
+    # company = soup.find('meta', property='og:site_name').content
     for url in competitor_urls:
-          # website = Crawler(url)
-          # url_list = website.page_list
-          # for page in url_list:
-          #     soup = page['html']
-          #     company = soup.find('meta', property='og:site_name').content
-          #     print('blah')
+        # website = Crawler(url)
+        
+        # for page in website.page_list:
+        #     soup = page['html']
+            
+            
+              
         crawler_list.append(Crawler(url))
 
-
-    print(crawler_list[0])
+    site = crawler_list[0]
+    name = site.url.netloc.replace('www.', '').split('.')[0]
+    for page in site.page_list:
+        path = page['url'].path.replace('/', '-')
+        page_url_path = "index" if path == "/" else path
+        with open(f"data/{name}/{page_url_path}.html", "w", encoding='utf-8') as file:
+            file.write(str(page['html']))
+    
     print('the end')
 
     # data, plot_data, total_counts, total_pages = crawler.gather_competitor_data(competitor_urls)
