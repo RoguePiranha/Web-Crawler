@@ -271,6 +271,9 @@ class Finder:
     def find(self):
         print('something goes here')
 
+    def has_content(tag):
+        return tag.string and tag.string.strip()
+
 # Main script execution
 if __name__ == "__main__":
     # chrome_binary_path = config('CHROME_BINARY_PATH')
@@ -301,11 +304,20 @@ if __name__ == "__main__":
 
     site = crawler_list[0]
     name = site.url.netloc.replace('www.', '').split('.')[0]
+    # for page in site.page_list:
+    #     path = page['url'].path.replace('/', '-')
+    #     page_url_path = "index" if path == "/" else path
+    #     with open(f"data/{name}/{page_url_path}.html", "w", encoding='utf-8') as file:
+    #         file.write(str(page['html']))
+    if not os.path.exists(f'data/{name}'):
+        os.makedirs(f'data/{name}', exist_ok=True)
+
     for page in site.page_list:
         path = page['url'].path.replace('/', '-')
+        body = page['html'].find('body')
         page_url_path = "index" if path == "/" else path
-        with open(f"data/{name}/{page_url_path}.html", "w", encoding='utf-8') as file:
-            file.write(str(page['html']))
+        with open(f"data/{name}-text/{page_url_path}.html", "w", encoding='utf-8') as file:
+            file.write(str())
     
     print('the end')
 
