@@ -1,18 +1,6 @@
-import os
-from urllib.parse import urljoin, urlsplit
-import re
-from bs4 import BeautifulSoup
-import requests
-from requests_html import HTMLSession
-import pandas as pd
-from collections import Counter
-import string
-from nltk.corpus import stopwords
-import nltk
+from django.db import models
 
-# Download NLTK stopwords
-nltk.download('stopwords')
-
+# Create your models here.
 class Crawler:
     BLACKLIST_EXTENSIONS = [
         ".png", ".jpeg", ".jpg", ".gif", ".bmp", ".tiff", ".svg", ".webp", ".ico", 
@@ -130,53 +118,3 @@ class Crawler:
         word_counts = Counter(filtered_words)
         most_common = word_counts.most_common(top_n)
         return [keyword for keyword, _ in most_common]
-
-def save_data(crawler_list):
-    all_price_speed_data = []
-
-    for site in crawler_list:
-        name = site.url.netloc.replace('www.', '').split('.')[0]
-
-        for page in site.page_list:
-            # Build the folder structure based on the URL path
-            path_parts = page['url'].path.strip('/').split('/')
-            if len(path_parts) > 1:
-                folder_path = os.path.join("data", name, *path_parts[:-1])
-            else:
-                folder_path = os.path.join("data", name)
-
-            # Ensure the directory exists
-            os.makedirs(folder_path, exist_ok=True)
-
-            # Determine the file name
-            file_name = "index.html" if len(path_parts) == 1 and not path_parts[0] else path_parts[-1] + ".html"
-
-            # Save the HTML content
-            with open(os.path.join(folder_path, file_name), "w", encoding='utf-8') as file:
-                file.write(str(page['html']))
-
-            # Collect data for saving to CSV
-            all_price_speed_data.append(page['data'])
-
-    if all_price_speed_data:
-        df = pd.DataFrame(all_price_speed_data)
-        df.to_csv(f"data/{name}/collected_data.csv", index=False)
-    else:
-        print("No data found to save.")
-
-    top_keywords = site.keyword_counter.most_common(10)
-    print(f"\nTop 10 Keywords for {name}:")
-    for keyword, count in top_keywords:
-        print(f"{keyword}: {count}")
-
-if __name__ == "__main__":
-    competitor_urls = [
-        "https://anthembroadband.com/",
-    ]
-
-    crawler_list = [Crawler(url) for url in competitor_urls]
-
-    save_data(crawler_list)
-    
-
-    print("Crawl completed successfully.")

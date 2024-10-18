@@ -2,6 +2,19 @@
 env
 .vscode
 .idea
+.git
 data/*
 scripts/*.html
 scripts/full_report_files
+
+db.sqlite3
+
+*.pyc
+__pycache__
+*/__pycache__
+
+# /static
+log
+
+/node_modules
+/package-lock.json
