@@ -1,0 +1,73 @@
+{% load static %}
+<!doctype html>
+<html>
+	<head>
+    <title></title>
+    <link rel="shortcut icon" type="image/png" href="{{ MEDIA_URL }}img/icon.png"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta property="og:image" content="">
+    {% block css %} 
+      <link rel="stylesheet" href="{% static 'bundle.css' %}?ver={% now 'm.Y.d' %}" type="text/css">
+    {% endblock %}
+	</head>
+	<body data-bs-theme="dark">
+    <nav class="navbar navbar-expand-lg navbar-dark">
+      <div class="container">
+        <a class="navbar-brand" href="#">Web Crawler</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item"><a class="nav-link" href="#">Home</a></li>
+            <li class="nav-item"><a class="nav-link" href="#services">Services</a></li>
+            <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <main>
+      <section class="container">
+        <form action="/" class="step-form" id="contact-info">
+          <div class="steps"></div>
+          <div class="tab" data-name="Web Crawler">
+            {% csrf_token %}
+            <input type="text" class="form-input" name="url" required placeholder="Enter URL">
+          </div>
+          <div class="status"></div>
+          <div class="controller">
+            <button name="next" type="button" class="btn">Submit</button>
+          </div>
+        </form>
+      </section>
+      <section id="services" class="container py-5">
+        <div class="row">
+          <div class="col-md-4">
+            <div class="card p-3">
+              <h3>Service 1</h3>
+              <p>Description of the first service.</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card p-3">
+              <h3>Service 2</h3>
+              <p>Description of the second service.</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card p-3">
+              <h3>Service 3</h3>
+              <p>Description of the third service.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer class="footer text-center">
+      <p>&copy; 2025 All Rights Reserved.</p>
+    </footer>
+    {% block js %}
+      <script script defer src="{% static 'bundle.js' %}?ver={% now 'm.d.y' %}"></script>
+    {% endblock %}
+  </body>
+</html>
