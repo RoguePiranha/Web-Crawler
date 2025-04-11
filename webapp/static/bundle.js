@@ -7949,7 +7949,8 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
 
 
 
-
+var urlEndpoint = 'http://localhost:8000/url/';
+var ai_res = document.querySelector('.ai_response');
 // Callback function will run when last step is submitted
 var formormCallback = function formormCallback(form, val) {
   return new Promise(/*#__PURE__*/function () {
@@ -7962,12 +7963,13 @@ var formormCallback = function formormCallback(form, val) {
               'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
             };
             _context.next = 3;
-            return (0,_marccent_util__WEBPACK_IMPORTED_MODULE_1__.post)('http://localhost:8000/url/', val, headers);
+            return (0,_marccent_util__WEBPACK_IMPORTED_MODULE_1__.post)(urlEndpoint, val, headers);
           case 3:
             dt = _context.sent;
             console.log(val, dt);
+            ai_res.innerHTML = dt.ai_response;
             resolve(true);
-          case 6:
+          case 7:
           case "end":
             return _context.stop();
         }

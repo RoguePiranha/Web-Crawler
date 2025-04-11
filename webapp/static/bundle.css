@@ -20,10 +20,10 @@
 }
 
 .flex-center {
-display: flex;
-justify-content: center;
-align-items: center;
-flex-wrap: wrap;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
 }
 header {
   background-color: rgba(0, 0, 0, 0.5);

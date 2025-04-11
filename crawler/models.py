@@ -1,5 +1,17 @@
 from django.db import models
 
+# import os
+from urllib.parse import urljoin, urlsplit
+import re
+from bs4 import BeautifulSoup
+import requests
+from requests_html import HTMLSession
+# import pandas as pd
+from collections import Counter
+import string
+from nltk.corpus import stopwords
+# import nltk
+
 # Create your models here.
 class Crawler:
     BLACKLIST_EXTENSIONS = [
@@ -53,15 +65,19 @@ class Crawler:
             session = HTMLSession()
             response = session.get(url.geturl())
             soup = BeautifulSoup(response.html.html, 'html.parser')
-
-            page_data = self.scrape_competitor_info(url.geturl(), soup)
+            clean_soup = self.clean_document(soup)
+            # clean_soup = soup.get_text(separator=' ', strip=True)
+            # page_data = self.scrape_competitor_info(url.geturl(), soup)
             self.page_list.append({
                 'url': url,
-                'data': page_data,
-                'html': soup
+                # 'data': page_data,
+                'html': soup,
+                'text': clean_soup,
+                'html_size': len(str(soup)),
+                'text_size': len(str(clean_soup))
             })
 
-            self.keyword_counter.update(page_data['frequent_keywords'])
+            # self.keyword_counter.update(page_data['frequent_keywords'])
             self.filter_url_list(soup)
 
 
@@ -82,39 +98,47 @@ class Crawler:
                 if full_url not in [u.geturl() for u in self.visited_urls] and full_url not in [u.geturl() for u in self.url_queue]:
                     self.url_queue.append(parsed_url)
 
-    def scrape_competitor_info(self, url, soup):
-        pricing_info = soup.find_all(string=re.compile(r'\$\d+'))
-        speed_info = soup.find_all(string=re.compile(r'\d+ Mbps'))
-        data_caps = soup.find_all(string=re.compile(r'data cap', re.I))
+    def clean_document(self, soup):
+        for tag in soup(['script', 'style', 'header', 'footer', 'nav', 'noscript', 'iframe', 'form', 'link', 'img']):
+            tag.decompose()
+            
+        # text = soup.get_text(separator="\n", strip=True)
+        # return text.replace("\n", " ")
+        return soup.get_text(separator="\n", strip=True)
 
-        prices = [float(match.group(1)) for price in pricing_info if (match := re.search(r'\$(\d+)', price))]
-        speeds = [int(match.group(1)) for speed in speed_info if (match := re.search(r'(\d+)\s?Mbps', speed))]
+    # def scrape_competitor_info(self, url, soup):
+    #     pricing_info = soup.find_all(string=re.compile(r'\$\d+'))
+    #     speed_info = soup.find_all(string=re.compile(r'\d+ Mbps'))
+    #     data_caps = soup.find_all(string=re.compile(r'data cap', re.I))
 
-        meta_keywords = soup.find('meta', attrs={'name': 'keywords'})
-        keywords = meta_keywords['content'] if meta_keywords and meta_keywords.has_attr('content') else "No keywords found"
+    #     prices = [float(match.group(1)) for price in pricing_info if (match := re.search(r'\$(\d+)', price))]
+    #     speeds = [int(match.group(1)) for speed in speed_info if (match := re.search(r'(\d+)\s?Mbps', speed))]
 
-        meta_description = soup.find('meta', attrs={'name': 'description'})
-        description = meta_description['content'] if meta_description and meta_description.has_attr('content') else "No description found"
+    #     meta_keywords = soup.find('meta', attrs={'name': 'keywords'})
+    #     keywords = meta_keywords['content'] if meta_keywords and meta_keywords.has_attr('content') else "No keywords found"
 
-        frequent_keywords = self.extract_frequent_keywords(soup)
+    #     meta_description = soup.find('meta', attrs={'name': 'description'})
+    #     description = meta_description['content'] if meta_description and meta_description.has_attr('content') else "No description found"
 
-        return {
-            "url": url,
-            "prices": prices,
-            "speeds": speeds,
-            "keywords": keywords,
-            "description": description,
-            "data_caps": data_caps,
-            "frequent_keywords": frequent_keywords
-        }
+    #     frequent_keywords = self.extract_frequent_keywords(soup)
 
-    def extract_frequent_keywords(self, soup, top_n=10):
-        text = soup.get_text(separator=' ')
-        text = text.lower()
-        text = text.translate(str.maketrans('', '', string.punctuation))
-        words = text.split()
-        stop_words = set(stopwords.words('english'))
-        filtered_words = [word for word in words if word not in stop_words and word.isalpha()]
-        word_counts = Counter(filtered_words)
-        most_common = word_counts.most_common(top_n)
-        return [keyword for keyword, _ in most_common]
+    #     return {
+    #         "url": url,
+    #         "prices": prices,
+    #         "speeds": speeds,
+    #         "keywords": keywords,
+    #         "description": description,
+    #         "data_caps": data_caps,
+    #         "frequent_keywords": frequent_keywords
+    #     }
+
+    # def extract_frequent_keywords(self, soup, top_n=10):
+    #     text = soup.get_text(separator=' ')
+    #     text = text.lower()
+    #     text = text.translate(str.maketrans('', '', string.punctuation))
+    #     words = text.split()
+    #     stop_words = set(stopwords.words('english'))
+    #     filtered_words = [word for word in words if word not in stop_words and word.isalpha()]
+    #     word_counts = Counter(filtered_words)
+    #     most_common = word_counts.most_common(top_n)
+    #     return [keyword for keyword, _ in most_common]
