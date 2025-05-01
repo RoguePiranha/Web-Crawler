@@ -1,37 +1,33 @@
 from django.db import models
-
-# import os
 from urllib.parse import urljoin, urlsplit
-import re
 from bs4 import BeautifulSoup
 import requests
 from requests_html import HTMLSession
-# import pandas as pd
 from collections import Counter
-import string
-from nltk.corpus import stopwords
-# import nltk
+from django.conf import settings
+from django.template.defaultfilters import truncatechars
+from openai import OpenAI
+from decouple import config
+import tiktoken
+import time
+import re
 
-# Create your models here.
 class Crawler:
     BLACKLIST_EXTENSIONS = [
-        ".png", ".jpeg", ".jpg", ".gif", ".bmp", ".tiff", ".svg", ".webp", ".ico", 
-        ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".zip", ".rar", 
-        ".7z", ".tar", ".gz", ".mp3", ".wav", ".ogg", ".mp4", ".avi", ".mkv", 
-        ".mov", ".flv", ".wmv", ".exe", ".dll", ".bin"
+        ".png", ".jpeg", ".jpg", ".gif", ".bmp", ".tiff", ".svg", ".webp", ".ico", ".pdf", ".doc",
+        ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".zip", ".rar", ".7z", ".tar", ".gz", ".mp3", 
+        ".wav", ".ogg", ".mp4", ".avi", ".mkv", ".mov", ".flv", ".wmv", ".exe", ".dll", ".bin", ".md"
     ]
     
-    IGNORE_PATTERNS = [
-        "#", "feed", "comments", "mailto:", "tel:", "javascript:"
-    ]
+    IGNORE_PATTERNS = [ "#", "feed", "comments", "mailto:", "tel:", "javascript:" ]
 
     def __init__(self, url):
-        self.url = urlsplit(self.redirect_handler(url))
-        self.page_list = []
-        self.url_queue = [self.url]
-        self.visited_urls = set()
-        self.keyword_counter = Counter()
-
+        url = urlsplit(self.redirect_handler(url))
+        self.domain = url.scheme + "://" + url.netloc + "/"
+        self.pages = []
+        self.queue = set()
+        self.queue.add(url.path.lower())
+        self.visited = set()
         self.crawl_site()
 
     def redirect_handler(self, url):
@@ -43,102 +39,143 @@ class Crawler:
             return url
 
     def crawl_site(self):
-        while self.url_queue:
-            current_url = self.url_queue.pop(0)
-            if current_url in self.visited_urls or not self.is_valid_page(current_url):
+        while self.queue:
+            path = self.queue.pop()
+            if path == '': path ='/'
+            if path in self.visited or not self.is_valid_page(path):
                 continue
 
-            print(f"Crawling: {current_url.geturl()}")
-            self.visited_urls.add(current_url)
-            self.crawl_page(current_url)
+            print(f"Crawling: {path}")
+            self.visited.add(path)
+            self.crawl_page(path)
 
-    def is_valid_page(self, url):
-        path = url.path.lower()
+    def is_valid_page(self, path):
         if any(path.endswith(ext) for ext in self.BLACKLIST_EXTENSIONS):
             return False
-        if any(pattern in url.geturl().lower() for pattern in self.IGNORE_PATTERNS):
+        if any(pattern in path for pattern in self.IGNORE_PATTERNS):
             return False
         return True
 
-    def crawl_page(self, url):
+    def crawl_page(self, path):
         try:
             session = HTMLSession()
-            response = session.get(url.geturl())
+            response = session.get(self.domain + path)
             soup = BeautifulSoup(response.html.html, 'html.parser')
-            clean_soup = self.clean_document(soup)
-            # clean_soup = soup.get_text(separator=' ', strip=True)
-            # page_data = self.scrape_competitor_info(url.geturl(), soup)
-            self.page_list.append({
-                'url': url,
-                # 'data': page_data,
+            if soup.title:
+                if "Page not found" in soup.title.text:
+                    return
+
+            self.pages.append({
+                'path': path,
                 'html': soup,
-                'text': clean_soup,
-                'html_size': len(str(soup)),
-                'text_size': len(str(clean_soup))
+                'text': self.clean_document(soup),
             })
 
-            # self.keyword_counter.update(page_data['frequent_keywords'])
-            self.filter_url_list(soup)
-
+            self.filter_links(soup)
 
         except Exception as e:
-            print(f"Error crawling {url.geturl()}: {e}")
+            print(f"Error crawling {path}: {e}")
 
-    def filter_url_list(self, soup):
-        base_domain = self.url.netloc
+    def filter_links(self, soup):
         body = soup.find('body')
         if not body:
             return
 
         for link in body.find_all('a', href=True):
-            full_url = urljoin(self.url.geturl(), link['href'])
-            parsed_url = urlsplit(full_url)
-
-            if parsed_url.netloc == base_domain and self.is_valid_page(parsed_url):
-                if full_url not in [u.geturl() for u in self.visited_urls] and full_url not in [u.geturl() for u in self.url_queue]:
-                    self.url_queue.append(parsed_url)
+            url = urlsplit(urljoin(self.domain, link['href']).lower())
+            if url.netloc == urlsplit(self.domain).netloc:
+                path = url.path
+                if self.is_valid_page(path):
+                    if path not in [u for u in self.visited] and path not in [u for u in self.queue]:
+                        self.queue.add(path)
 
     def clean_document(self, soup):
-        for tag in soup(['script', 'style', 'header', 'footer', 'nav', 'noscript', 'iframe', 'form', 'link', 'img']):
+        for tag in soup(['script', 'style', 'noscript', 'iframe', 'form', 'link', 'img']):
             tag.decompose()
-            
-        # text = soup.get_text(separator="\n", strip=True)
-        # return text.replace("\n", " ")
+
         return soup.get_text(separator="\n", strip=True)
 
-    # def scrape_competitor_info(self, url, soup):
-    #     pricing_info = soup.find_all(string=re.compile(r'\$\d+'))
-    #     speed_info = soup.find_all(string=re.compile(r'\d+ Mbps'))
-    #     data_caps = soup.find_all(string=re.compile(r'data cap', re.I))
+class Domain(models.Model):
+    domain = models.URLField(unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    #     prices = [float(match.group(1)) for price in pricing_info if (match := re.search(r'\$(\d+)', price))]
-    #     speeds = [int(match.group(1)) for speed in speed_info if (match := re.search(r'(\d+)\s?Mbps', speed))]
+    def __str__(self):
+        return self.name or self.url
+    
+class Ai:
+    client = OpenAI(api_key=config('OPENAI_KEY'))
+    
+    def __init__(self, content="", role="user", model="gpt-4o-mini"):
+        self.encoder = tiktoken.encoding_for_model(model)
+        self.model = model
+        self.tokens = 0
+        self.text = ''
+        self.messages = []
+        self.response = []
 
-    #     meta_keywords = soup.find('meta', attrs={'name': 'keywords'})
-    #     keywords = meta_keywords['content'] if meta_keywords and meta_keywords.has_attr('content') else "No keywords found"
+    def addMsg(self, content='',  role="user"):
+        self.messages.append({"role": role, "content": content})
 
-    #     meta_description = soup.find('meta', attrs={'name': 'description'})
-    #     description = meta_description['content'] if meta_description and meta_description.has_attr('content') else "No description found"
+    def addTxt(self, content=''):
+        self.text += content + ' '
 
-    #     frequent_keywords = self.extract_frequent_keywords(soup)
+    def split_by_tokens(self, text='', max_tokens=50000):
+        tokens = self.encoder.encode(text)
+        chunks = []
+        for i in range(0, len(tokens), max_tokens):
+            chunk_tokens = tokens[i:i+max_tokens]
+            chunk_text = self.encoder.decode(chunk_tokens)
+            chunks.append([{"role": "user", "content": chunk_text}])
 
-    #     return {
-    #         "url": url,
-    #         "prices": prices,
-    #         "speeds": speeds,
-    #         "keywords": keywords,
-    #         "description": description,
-    #         "data_caps": data_caps,
-    #         "frequent_keywords": frequent_keywords
-    #     }
+        return chunks
 
-    # def extract_frequent_keywords(self, soup, top_n=10):
-    #     text = soup.get_text(separator=' ')
-    #     text = text.lower()
-    #     text = text.translate(str.maketrans('', '', string.punctuation))
-    #     words = text.split()
-    #     stop_words = set(stopwords.words('english'))
-    #     filtered_words = [word for word in words if word not in stop_words and word.isalpha()]
-    #     word_counts = Counter(filtered_words)
-    #     most_common = word_counts.most_common(top_n)
-    #     return [keyword for keyword, _ in most_common]
+    def remove_dup_sentence(self):
+        sentences = re.split(r'(?<=[.!?]) +', self.text)
+        unique_sentences = list(dict.fromkeys(sentences))
+        return ' '.join(unique_sentences)
+
+    def send(self, compact=False):
+        temp = self.text
+        if compact == True:
+            temp = self.remove_dup_sentence()
+
+        chunks = self.split_by_tokens(temp)
+        chunks.append(self.messages)
+
+        for message in chunks:
+            print(f'{chunks.index(message) + 1}/{len(chunks)} received.')
+            res= self.client.chat.completions.create(
+                model=self.model,
+                messages=message
+            )
+            self.response.append(res.choices[0].message.content)
+        return self.response   
+    
+class Page(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    domain = models.ForeignKey(Domain, related_name='pages', on_delete=models.CASCADE, null=True)
+    path = models.CharField(max_length=255, default="")
+    text = models.TextField(default="")
+    html = models.TextField('HTML', default="")
+
+    def __str__(self):
+      return f"{self.base}{self.path}"
+   
+class Option(models.Model):
+  name = models.CharField(max_length=200)
+  value = models.TextField(default='')
+
+  def __str__(self):
+    return f"{self.id}. {self.name}"
+
+  @property
+  def short_description(self):
+    return truncatechars(self.value, 100)
+
+  def get(name):
+    obj = Option.objects.filter(name=name).values()
+    return obj[0]['value'] if (len(obj) > 0) else 'Item not found'
+  
+  def update(name, val):
+    return Option.objects.update_or_create(name=name,value=val)[1]

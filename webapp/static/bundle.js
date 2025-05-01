@@ -7951,6 +7951,9 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
 
 var urlEndpoint = 'http://localhost:8000/url/';
 var ai_res = document.querySelector('.ai_response');
+var add_url = document.querySelector('.add_url');
+var remove_url = document.querySelector('.remove_url');
+var status = document.querySelector('.status');
 // Callback function will run when last step is submitted
 var formormCallback = function formormCallback(form, val) {
   return new Promise(/*#__PURE__*/function () {
@@ -7967,7 +7970,7 @@ var formormCallback = function formormCallback(form, val) {
           case 3:
             dt = _context.sent;
             console.log(val, dt);
-            ai_res.innerHTML = dt.ai_response;
+            ai_res.innerHTML = "<pre>".concat(dt.ai_response, "</pre>");
             resolve(true);
           case 7:
           case "end":
@@ -7980,7 +7983,26 @@ var formormCallback = function formormCallback(form, val) {
     };
   }());
 };
-var form = new _marccent_util_form__WEBPACK_IMPORTED_MODULE_0__.Form(document.querySelector('#contact-info'), formormCallback);
+var form = new _marccent_util_form__WEBPACK_IMPORTED_MODULE_0__.Form(document.querySelector('#crawler'), formormCallback);
+add_url.addEventListener('click', function (e) {
+  var list = document.querySelectorAll('[id*="url_field"]');
+  list[list.length - 1].insertAdjacentHTML("afterend", "\n    <div class=\"input-group mb-3\" id=\"url_field_1\">\n      <span class=\"input-group-text\" id=\"basic-addon2\">Domain</span>\n      <input type=\"text\" class=\"form-input form-control\" \n        name=\"url_".concat(list.length + 1, "\" required placeholder=\"Enter URL #").concat(list.length + 1, "\">\n    </div>\n  "));
+  remove_url.disabled = document.querySelectorAll('[id*="url_field"]').length > 1 ? false : true;
+});
+remove_url.addEventListener('click', function (e) {
+  var list = document.querySelectorAll('[id*="url_field"]');
+  console.log(list.length);
+  var last = list[list.length - 1];
+  var input = last.querySelector('input');
+  if (input.value !== '') {
+    status.innerHTML = "\n      <div class=\"alert alert-danger mt-2\">\n        <div>".concat(input.getAttribute('placeholder'), " need to be empty in order to delete.</div>\n      </div>\n    ");
+    return;
+  } else {
+    status.innerHTML = "\n      <div class=\"alert alert-success mt-2\">\n        <div>".concat(input.getAttribute('placeholder'), " has been deleted.</div>\n      </div>\n    ");
+    last.remove();
+  }
+  remove_url.disabled = document.querySelectorAll('[id*="url_field"]').length < 2 ? true : false;
+});
 })();
 
 /******/ })()

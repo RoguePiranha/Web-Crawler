@@ -2,8 +2,8 @@
 <!doctype html>
 <html>
 	<head>
-    <title></title>
-    <link rel="shortcut icon" type="image/png" href="{{ MEDIA_URL }}img/icon.png"/>
+    <title>ABG Web Crawler</title>
+    <link rel="shortcut icon" type="image/png" href="{{ MEDIA_URL }}icon.png"/>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta property="og:image" content="">
     {% block css %} 
@@ -13,7 +13,10 @@
 	<body data-bs-theme="dark">
     <nav class="navbar navbar-expand-lg navbar-dark">
       <div class="container">
-        <a class="navbar-brand" href="#">Web Crawler</a>
+        <a class="navbar-brand" href="/">
+          <img class="logo" src="{{ MEDIA_URL }}icon.png" alt="">
+          Web Crawler
+        </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
           <span class="navbar-toggler-icon"></span>
         </button>
@@ -28,44 +31,29 @@
     </nav>
     <main>
       <section class="container">
-        <form action="/" class="step-form" id="contact-info">
+        <form action="/" class="step-form" id="crawler">
           <div class="steps"></div>
-          <div class="tab" data-name="Web Crawler">
+          <div class="tab border m-0 p-4 rounded" data-name="Web Crawler">
             {% csrf_token %}
-            <input type="text" class="form-input" name="url" required placeholder="Enter URL">
+            <!-- <input type="text" class="form-input" name="url" required placeholder="Enter URL"> -->
+            <div class="input-group mb-3" id="url_field_1">
+              <span class="input-group-text" id="basic-addon2">Domain</span>
+              <input type="text" class="form-input form-control" name="url_1" required placeholder="Enter URL">
+            </div>
+            <input type="text" class="form-input" name="prompt" required placeholder="AI Command">
           </div>
           <div class="status"></div>
           <div class="controller">
+            <button name="remove_url" disabled type="button" class="btn remove_url">Remove URL</button>
+            <button name="add_url" type="button" class="btn add_url">Add Another URL</button>
             <button name="next" type="button" class="btn">Submit</button>
           </div>
         </form>
         <div class="ai_response"></div>
       </section>
-      <section id="services" class="container py-5">
-        <div class="row">
-          <div class="col-md-4">
-            <div class="card p-3">
-              <h3>Service 1</h3>
-              <p>Description of the first service.</p>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="card p-3">
-              <h3>Service 2</h3>
-              <p>Description of the second service.</p>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="card p-3">
-              <h3>Service 3</h3>
-              <p>Description of the third service.</p>
-            </div>
-          </div>
-        </div>
-      </section>
     </main>
     <footer class="footer text-center">
-      <p>&copy; 2025 All Rights Reserved.</p>
+      <p>Copyright &copy; 2025 All Rights Reserved. Anthem Business Group</p>
     </footer>
     {% block js %}
       <script script defer src="{% static 'bundle.js' %}?ver={% now 'm.d.y' %}"></script>
