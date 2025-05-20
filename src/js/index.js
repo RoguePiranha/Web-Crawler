@@ -17,7 +17,7 @@ const formormCallback = (form, val) => {
     }
     const dt = await post(urlEndpoint, val, headers);
     console.log(val, dt);
-    ai_res.innerHTML = `<pre>${dt.ai_response}</pre>`;
+    ai_res.innerHTML = `<pre class="p-4 border rounded">${dt.ai_response}</pre>`;
     resolve(true);
   });
 }

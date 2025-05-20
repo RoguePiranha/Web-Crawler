@@ -47,15 +47,17 @@ def url_view(request):
         website["domain"] = domain.domain
         website["pages"] = PageSerializer(domain.pages.all(), many=True).data
 
-        for page in website["pages"]: msg.addTxt(page["text"])
+        for page in website["pages"]: 
+            msg.addTxt(f"page {page["path"]} \n\n {page["text"]} \n\n")
         data.append(website)
 
     # msg.addMsg(content="Wrap response HTML tags. do not use ```html", role="system")
-    msg.addMsg(f"Using previous context, {dt['prompt']}")
-    response = msg.send(compact=True)
+    # msg.addMsg(f"Using previous context, {dt['prompt']}")
+    response = msg.send()
     
     return JsonResponse({ 
         "data": data,
-        "ai_response": response[-1],
-        "response_list": response
+        # "ai_response": response.choices[0].message.content,
+        "ai_response": response,
+        "history": msg.history
     })

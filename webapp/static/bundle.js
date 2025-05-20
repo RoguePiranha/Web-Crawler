@@ -7970,7 +7970,7 @@ var formormCallback = function formormCallback(form, val) {
           case 3:
             dt = _context.sent;
             console.log(val, dt);
-            ai_res.innerHTML = "<pre>".concat(dt.ai_response, "</pre>");
+            ai_res.innerHTML = "<pre class=\"p-4 border rounded\">".concat(dt.ai_response, "</pre>");
             resolve(true);
           case 7:
           case "end":

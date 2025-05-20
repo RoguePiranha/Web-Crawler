@@ -112,6 +112,15 @@ class Ai:
         self.text = ''
         self.messages = []
         self.response = []
+        self.history = []
+        self.systemMsg = {
+            "role": "system",
+            "content": (
+                "You are an intelligent assistant that analyzes website content. "
+                "Your job is to organize key information and giving a detailed overview."
+                "Do not summarize. List every item, even if it appears repetitive. I want completeness, not conciseness."
+            )
+        }
 
     def addMsg(self, content='',  role="user"):
         self.messages.append({"role": role, "content": content})
@@ -119,15 +128,27 @@ class Ai:
     def addTxt(self, content=''):
         self.text += content + ' '
 
-    def split_by_tokens(self, text='', max_tokens=50000):
+    def split_by_tokens(self, text='', max_tokens=60000):
         tokens = self.encoder.encode(text)
         chunks = []
         for i in range(0, len(tokens), max_tokens):
             chunk_tokens = tokens[i:i+max_tokens]
             chunk_text = self.encoder.decode(chunk_tokens)
-            chunks.append([{"role": "user", "content": chunk_text}])
+            chunks.append([self.chat(chunk_text)])
 
         return chunks
+    
+    def chat(self, content=''):
+        return {
+            "role": "user",
+            "content": (
+                "List all distinct features, services, products, values, pricing, equipment, locations and information found in every page of website." 
+                "Do not skip any page or section, List every single detail in every single page."
+                # "Do not skip any page or section, and include even small details."
+                # "Separate content by page."
+                + content
+            )
+        }
 
     def remove_dup_sentence(self):
         sentences = re.split(r'(?<=[.!?]) +', self.text)
@@ -135,21 +156,24 @@ class Ai:
         return ' '.join(unique_sentences)
 
     def send(self, compact=False):
-        temp = self.text
-        if compact == True:
-            temp = self.remove_dup_sentence()
-
-        chunks = self.split_by_tokens(temp)
-        chunks.append(self.messages)
-
+        # print(len(self.encoder.encode(self.text)))
+        chunks = self.split_by_tokens(self.text)
+        # chunks.append(self.messages)
+        content = ''
+        
         for message in chunks:
+            message.append(self.systemMsg)
+            # message.append(self.chat(message.content))
+            res= self.client.chat.completions.create(model=self.model, messages=message)
+            # self.response.append(res.choices[0].message.content)
+            self.history.append({"role": "assistant", "content": res.choices[0].message.content})
+            content += res.choices[0].message.content + "\n\n--- \n\n"
             print(f'{chunks.index(message) + 1}/{len(chunks)} received.')
-            res= self.client.chat.completions.create(
-                model=self.model,
-                messages=message
-            )
-            self.response.append(res.choices[0].message.content)
-        return self.response   
+
+        site_chat = []
+        # site_resume = self.client.chat.completions.create(model=self.model, messages=site_chat)
+        # print(len(self.encoder.encode(full_website_data.choices[0].message.content)))    
+        return content
     
 class Page(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)

@@ -33,6 +33,11 @@
   content: "\002A";
 }
 
+pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
 .flex-center {
   display: flex;
   justify-content: center;
