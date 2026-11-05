@@ -3,7 +3,6 @@ import { post } from '@marccent/util';
 import 'bootstrap';
 import '../css/global.css';
 import '@marccent/util/css/form';
-
 const urlEndpoint = 'http://localhost:8000/url/';
 const ai_res = document.querySelector('.ai_response');
 const add_url = document.querySelector('.add_url');
